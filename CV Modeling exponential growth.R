@@ -1,10 +1,13 @@
 # Coronavirus
+# Test modeling to show exponential growth with doubling time in 3, 6, or 12 days
 
 #library
 library(tidyverse)
 library(lubridate)
 library(gganimate)
 library(scales)
+
+
 
 # make dataframe and put data in it
 # get 100 days
