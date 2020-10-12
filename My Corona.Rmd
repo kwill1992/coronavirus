@@ -12,7 +12,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-#------------------ Packages ------------------
+# ------------------ Packages ------------------
 library(flexdashboard)
 # install.packages("devtools")
 # devtools::install_github("RamiKrispin/coronavirus", force = TRUE)
@@ -22,6 +22,10 @@ library(tidyverse)
 #update_datasets()
 library(tidyverse)
 
+# Update 12 October 2020
+# The coronavirus package changed and different column labels.
+
+
 confirmed_color <- "purple"
 active_color <- "#1f77b4"
 recovered_color <- "forestgreen"
@@ -29,7 +33,7 @@ death_color <- "red"
 
 
 df_coronavirusUS <- coronavirus %>%
-  dplyr::filter(Country.Region == "US")
+  dplyr::filter(country == "US")
 library(DT)
 CV_datatable <- datatable(df_coronavirusUS, options = list(pageLength = 100))
 # View(coronavirus)
@@ -37,14 +41,14 @@ CV_datatable <- datatable(df_coronavirusUS, options = list(pageLength = 100))
 
 df <- coronavirus %>% 
   # dplyr::filter(date == max(date)) %>%
-  dplyr::group_by(Country.Region, type) %>%
+  dplyr::group_by(country, type) %>%
   dplyr::summarise(total = sum(cases)) %>%
   tidyr::pivot_wider(names_from =  type, 
                      values_from = total) %>%
   dplyr::mutate(unrecovered = confirmed - ifelse(is.na(recovered), 0, recovered) - ifelse(is.na(death), 0, death)) %>%
   dplyr::arrange(-confirmed) %>%
   dplyr::ungroup() %>%
-  dplyr::mutate(country = dplyr::if_else(Country.Region == "United Arab Emirates", "UAE", Country.Region)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "United Arab Emirates", "UAE", country)) %>%
   dplyr::mutate(country = dplyr::if_else(country == "Mainland China", "China", country)) %>%
   dplyr::mutate(country = dplyr::if_else(country == "North Macedonia", "N.Macedonia", country)) %>%
   dplyr::mutate(country = trimws(country)) %>%
@@ -80,15 +84,15 @@ df_daily2 <- coronavirus %>%
 
 df_US <- coronavirus %>% 
   # dplyr::filter(date == max(date)) %>%
-  dplyr::filter(Country.Region == "US") %>%
-  dplyr::group_by(Country.Region, type) %>%
+  dplyr::filter(country == "US") %>%
+  dplyr::group_by(country, type) %>%
   dplyr::summarise(total = sum(cases)) %>%
   tidyr::pivot_wider(names_from =  type, 
                      values_from = total) %>%
   dplyr::mutate(unrecovered = confirmed - ifelse(is.na(recovered), 0, recovered) - ifelse(is.na(death), 0, death)) %>%
   dplyr::arrange(-confirmed) %>%
   dplyr::ungroup() %>%
-  dplyr::mutate(country = dplyr::if_else(Country.Region == "United Arab Emirates", "UAE", Country.Region)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "United Arab Emirates", "UAE", country)) %>%
   dplyr::mutate(country = dplyr::if_else(country == "Mainland China", "China", country)) %>%
   dplyr::mutate(country = dplyr::if_else(country == "North Macedonia", "N.Macedonia", country)) %>%
   dplyr::mutate(country = trimws(country)) %>%
@@ -96,7 +100,7 @@ df_US <- coronavirus %>%
 
 
 df_daily_US <- coronavirus %>% 
-  dplyr::filter(Country.Region == "US") %>%
+  dplyr::filter(country == "US") %>%
   dplyr::group_by(date, type) %>%
   dplyr::summarise(total = sum(cases, na.rm = TRUE)) %>%
   tidyr::pivot_wider(names_from = type,
@@ -110,7 +114,7 @@ df_daily_US <- coronavirus %>%
                 active_cum = cumsum(active))
 
 df_daily2_US <- coronavirus %>% 
-  dplyr::filter(Country.Region == "US") %>%
+  dplyr::filter(country == "US") %>%
   dplyr::filter(date == max(date)) %>%
   dplyr::group_by(date, type) %>%
   dplyr::summarise(total = sum(cases, na.rm = TRUE)) %>%
@@ -129,7 +133,7 @@ df_daily2_US <- coronavirus %>%
 df_US2 <- coronavirus %>% 
   # dplyr::filter(date == max(date)) %>%
   # Just US Data
-  dplyr::filter(Country.Region == "US") %>%
+  dplyr::filter(country == "US") %>%
   # Just deaths
   dplyr::filter(type == "death") #%>%
 

@@ -66,7 +66,8 @@ coronavirus
 # Summarize by cases.
 # Order from large to small.
 # See 20 largest data entries.
-corona_summary <- coronavirus %>% group_by(Country.Region, type) %>%
+# Date in package was changed.  "Country.Region" changed to "country".
+corona_summary <- coronavirus %>% group_by(country, type) %>%
   summarise(total_cases = sum(cases)) %>%
   arrange(-total_cases)
 corona_summary %>% head(20)
@@ -81,7 +82,7 @@ min(coronavirus$date)
 # Largest value of "confirmed" on top.
 coronavirus %>% 
   filter(date == max(date)) %>%
-  select(country = Country.Region, type, cases) %>%
+  select(country = country, type, cases) %>%
   group_by(country, type) %>%
   summarise(total_cases = sum(cases)) %>%
   pivot_wider(names_from = type,
