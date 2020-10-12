@@ -1,0 +1,1190 @@
+---
+title: "SARS-CoV-2 aka:coronavirus"
+author: "Kevin Williams"
+date: "04/04/2020"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+#    source_code: embed
+    vertical_layout: scroll
+#    vertical_layout: fill
+
+---
+
+```{r setup, include=FALSE}
+#------------------ Packages ------------------
+library(flexdashboard)
+# install.packages("devtools")
+# devtools::install_github("RamiKrispin/coronavirus", force = TRUE)
+library(coronavirus)
+data(coronavirus)
+library(tidyverse)
+#update_datasets()
+library(tidyverse)
+
+confirmed_color <- "purple"
+active_color <- "#1f77b4"
+recovered_color <- "forestgreen"
+death_color <- "red"
+
+
+df_coronavirusUS <- coronavirus %>%
+  dplyr::filter(Country.Region == "US")
+library(DT)
+CV_datatable <- datatable(df_coronavirusUS, options = list(pageLength = 100))
+# View(coronavirus)
+# max(coronavirus$date)
+
+df <- coronavirus %>% 
+  # dplyr::filter(date == max(date)) %>%
+  dplyr::group_by(Country.Region, type) %>%
+  dplyr::summarise(total = sum(cases)) %>%
+  tidyr::pivot_wider(names_from =  type, 
+                     values_from = total) %>%
+  dplyr::mutate(unrecovered = confirmed - ifelse(is.na(recovered), 0, recovered) - ifelse(is.na(death), 0, death)) %>%
+  dplyr::arrange(-confirmed) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(country = dplyr::if_else(Country.Region == "United Arab Emirates", "UAE", Country.Region)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "Mainland China", "China", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "North Macedonia", "N.Macedonia", country)) %>%
+  dplyr::mutate(country = trimws(country)) %>%
+  dplyr::mutate(country = factor(country, levels = country))
+
+
+df_daily <- coronavirus %>% 
+  dplyr::group_by(date, type) %>%
+  dplyr::summarise(total = sum(cases, na.rm = TRUE)) %>%
+  tidyr::pivot_wider(names_from = type,
+                     values_from = total) %>%
+  dplyr::arrange(date) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(active =  confirmed - death - recovered) %>%
+  dplyr::mutate(confirmed_cum = cumsum(confirmed),
+                death_cum = cumsum(death),
+                recovered_cum = cumsum(recovered),
+                active_cum = cumsum(active))
+
+df_daily2 <- coronavirus %>% 
+  dplyr::filter(date == max(date)) %>%
+  dplyr::group_by(date, type) %>%
+  dplyr::summarise(total = sum(cases, na.rm = TRUE)) %>%
+  tidyr::pivot_wider(names_from = type,
+                     values_from = total) %>%
+  dplyr::arrange(date) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(active =  confirmed - death - recovered) %>%
+  dplyr::mutate(confirmed_cum = cumsum(confirmed),
+                death_cum = cumsum(death),
+                recovered_cum = cumsum(recovered),
+                active_cum = cumsum(active))
+
+df_US <- coronavirus %>% 
+  # dplyr::filter(date == max(date)) %>%
+  dplyr::filter(Country.Region == "US") %>%
+  dplyr::group_by(Country.Region, type) %>%
+  dplyr::summarise(total = sum(cases)) %>%
+  tidyr::pivot_wider(names_from =  type, 
+                     values_from = total) %>%
+  dplyr::mutate(unrecovered = confirmed - ifelse(is.na(recovered), 0, recovered) - ifelse(is.na(death), 0, death)) %>%
+  dplyr::arrange(-confirmed) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(country = dplyr::if_else(Country.Region == "United Arab Emirates", "UAE", Country.Region)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "Mainland China", "China", country)) %>%
+  dplyr::mutate(country = dplyr::if_else(country == "North Macedonia", "N.Macedonia", country)) %>%
+  dplyr::mutate(country = trimws(country)) %>%
+  dplyr::mutate(country = factor(country, levels = country))
+
+
+df_daily_US <- coronavirus %>% 
+  dplyr::filter(Country.Region == "US") %>%
+  dplyr::group_by(date, type) %>%
+  dplyr::summarise(total = sum(cases, na.rm = TRUE)) %>%
+  tidyr::pivot_wider(names_from = type,
+                     values_from = total) %>%
+  dplyr::arrange(date) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(active =  confirmed - death - recovered) %>%
+  dplyr::mutate(confirmed_cum = cumsum(confirmed),
+                death_cum = cumsum(death),
+                recovered_cum = cumsum(recovered),
+                active_cum = cumsum(active))
+
+df_daily2_US <- coronavirus %>% 
+  dplyr::filter(Country.Region == "US") %>%
+  dplyr::filter(date == max(date)) %>%
+  dplyr::group_by(date, type) %>%
+  dplyr::summarise(total = sum(cases, na.rm = TRUE)) %>%
+  tidyr::pivot_wider(names_from = type,
+                     values_from = total) %>%
+  dplyr::arrange(date) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(active =  confirmed - death - recovered) %>%
+  dplyr::mutate(confirmed_cum = cumsum(confirmed),
+                death_cum = cumsum(death),
+                recovered_cum = cumsum(recovered),
+                active_cum = cumsum(active))
+
+
+
+df_US2 <- coronavirus %>% 
+  # dplyr::filter(date == max(date)) %>%
+  # Just US Data
+  dplyr::filter(Country.Region == "US") %>%
+  # Just deaths
+  dplyr::filter(type == "death") #%>%
+
+# DFs for deaths rates of .005 to .015
+df_US2$newCases_005 <- 0
+df_US2$newCases_006 <- 0
+df_US2$newCases_007 <- 0
+df_US2$newCases_008 <- 0
+df_US2$newCases_009 <- 0
+df_US2$newCases_010 <- 0
+df_US2$newCases_011 <- 0
+df_US2$newCases_012 <- 0
+df_US2$newCases_013 <- 0
+df_US2$newCases_014 <- 0
+df_US2$newCases_015 <- 0
+
+# Turn cases into deaths and get rid of extra columns
+df_US2$deaths <- df_US2$cases
+len_df <- length(df_US2$deaths)
+drops <- c("cases","type")
+df_US2 <- df_US2[ , !(names(df_US2) %in% drops)]
+
+# Make new columns for predicted deaths
+df_US2$predictedDeaths <- 0
+
+
+# This model was done on 19 March.  Only actual data March 19 or earlier.
+# Data in rows 39 to 58.
+# Model says to use data from 23 days prior.
+# This will estimate the numbers of cases that were new 23 days prior for each rate.
+for (i in 39:58) {
+  df_US2$newCases_005[i-23] <- round(df_US2$deaths[i]/.005)
+  df_US2$newCases_006[i-23] <- round(df_US2$deaths[i]/.006)
+  df_US2$newCases_007[i-23] <- round(df_US2$deaths[i]/.007)
+  df_US2$newCases_008[i-23] <- round(df_US2$deaths[i]/.008)
+  df_US2$newCases_009[i-23] <- round(df_US2$deaths[i]/.009)
+  df_US2$newCases_010[i-23] <- round(df_US2$deaths[i]/.010)
+  df_US2$newCases_011[i-23] <- round(df_US2$deaths[i]/.011)
+  df_US2$newCases_012[i-23] <- round(df_US2$deaths[i]/.012)
+  df_US2$newCases_013[i-23] <- round(df_US2$deaths[i]/.013)
+  df_US2$newCases_014[i-23] <- round(df_US2$deaths[i]/.014)
+  df_US2$newCases_015[i-23] <- round(df_US2$deaths[i]/.015)
+}
+
+# Make new DFs to then estimate new cases based on doubling rate.
+df_US_double3days <- df_US2
+df_US_double4days <- df_US2
+df_US_double5days <- df_US2
+df_US_double6days <- df_US2
+df_US_double7days <- df_US2
+df_US_double8days <- df_US2
+
+# Get starting number of cases for doubling.
+sum_005 <- sum(df_US2$newCases_005)
+sum_006 <- sum(df_US2$newCases_006)
+sum_007 <- sum(df_US2$newCases_007)
+sum_008 <- sum(df_US2$newCases_008)
+sum_009 <- sum(df_US2$newCases_009)
+sum_010 <- sum(df_US2$newCases_010)
+sum_011 <- sum(df_US2$newCases_011)
+sum_012 <- sum(df_US2$newCases_012)
+sum_013 <- sum(df_US2$newCases_013)
+sum_014 <- sum(df_US2$newCases_014)
+sum_015 <- sum(df_US2$newCases_015)
+
+#### Based on cases by March 19th, estimate new cases based on doubling rate.
+
+# For 3 day doubling.
+df_US_double3days$newCases_005[36] <- round(sum_005*(2^(1/3)))-sum_005
+df_US_double3days$newCases_006[36] <- round(sum_006*(2^(1/3)))-sum_006
+df_US_double3days$newCases_007[36] <- round(sum_007*(2^(1/3)))-sum_007
+df_US_double3days$newCases_008[36] <- round(sum_008*(2^(1/3)))-sum_008
+df_US_double3days$newCases_009[36] <- round(sum_009*(2^(1/3)))-sum_009
+df_US_double3days$newCases_010[36] <- round(sum_010*(2^(1/3)))-sum_010
+df_US_double3days$newCases_011[36] <- round(sum_011*(2^(1/3)))-sum_011
+df_US_double3days$newCases_012[36] <- round(sum_012*(2^(1/3)))-sum_012
+df_US_double3days$newCases_013[36] <- round(sum_013*(2^(1/3)))-sum_013
+df_US_double3days$newCases_014[36] <- round(sum_014*(2^(1/3)))-sum_014
+df_US_double3days$newCases_015[36] <- round(sum_015*(2^(1/3)))-sum_015
+
+for (i in (1:(len_df-36))) {
+  df_US_double3days$newCases_005[i+36] <- round(sum_005*(2^((i+1)/3)))-round(sum_005*(2^((i)/3)))
+  df_US_double3days$newCases_006[i+36] <- round(sum_006*(2^((i+1)/3)))-round(sum_006*(2^((i)/3)))
+  df_US_double3days$newCases_007[i+36] <- round(sum_007*(2^((i+1)/3)))-round(sum_007*(2^((i)/3)))
+  df_US_double3days$newCases_008[i+36] <- round(sum_008*(2^((i+1)/3)))-round(sum_008*(2^((i)/3)))
+  df_US_double3days$newCases_009[i+36] <- round(sum_009*(2^((i+1)/3)))-round(sum_009*(2^((i)/3)))
+  df_US_double3days$newCases_010[i+36] <- round(sum_010*(2^((i+1)/3)))-round(sum_010*(2^((i)/3)))
+  df_US_double3days$newCases_011[i+36] <- round(sum_011*(2^((i+1)/3)))-round(sum_011*(2^((i)/3)))
+  df_US_double3days$newCases_012[i+36] <- round(sum_012*(2^((i+1)/3)))-round(sum_012*(2^((i)/3)))
+  df_US_double3days$newCases_013[i+36] <- round(sum_013*(2^((i+1)/3)))-round(sum_013*(2^((i)/3)))
+  df_US_double3days$newCases_014[i+36] <- round(sum_014*(2^((i+1)/3)))-round(sum_014*(2^((i)/3)))
+  df_US_double3days$newCases_015[i+36] <- round(sum_015*(2^((i+1)/3)))-round(sum_015*(2^((i)/3)))
+}
+
+# For 4 day doubling.
+df_US_double4days$newCases_005[36] <- round(sum_005*(2^(1/4)))-sum_005
+df_US_double4days$newCases_006[36] <- round(sum_006*(2^(1/4)))-sum_006
+df_US_double4days$newCases_007[36] <- round(sum_007*(2^(1/4)))-sum_007
+df_US_double4days$newCases_008[36] <- round(sum_008*(2^(1/4)))-sum_008
+df_US_double4days$newCases_009[36] <- round(sum_009*(2^(1/4)))-sum_009
+df_US_double4days$newCases_010[36] <- round(sum_010*(2^(1/4)))-sum_010
+df_US_double4days$newCases_011[36] <- round(sum_011*(2^(1/4)))-sum_011
+df_US_double4days$newCases_012[36] <- round(sum_012*(2^(1/4)))-sum_012
+df_US_double4days$newCases_013[36] <- round(sum_013*(2^(1/4)))-sum_013
+df_US_double4days$newCases_014[36] <- round(sum_014*(2^(1/4)))-sum_014
+df_US_double4days$newCases_015[36] <- round(sum_015*(2^(1/4)))-sum_015
+
+for (i in (1:(len_df-36))) {
+  df_US_double4days$newCases_005[i+36] <- round(sum_005*(2^((i+1)/4)))-round(sum_005*(2^((i)/4)))
+  df_US_double4days$newCases_006[i+36] <- round(sum_006*(2^((i+1)/4)))-round(sum_006*(2^((i)/4)))
+  df_US_double4days$newCases_007[i+36] <- round(sum_007*(2^((i+1)/4)))-round(sum_007*(2^((i)/4)))
+  df_US_double4days$newCases_008[i+36] <- round(sum_008*(2^((i+1)/4)))-round(sum_008*(2^((i)/4)))
+  df_US_double4days$newCases_009[i+36] <- round(sum_009*(2^((i+1)/4)))-round(sum_009*(2^((i)/4)))
+  df_US_double4days$newCases_010[i+36] <- round(sum_010*(2^((i+1)/4)))-round(sum_010*(2^((i)/4)))
+  df_US_double4days$newCases_011[i+36] <- round(sum_011*(2^((i+1)/4)))-round(sum_011*(2^((i)/4)))
+  df_US_double4days$newCases_012[i+36] <- round(sum_012*(2^((i+1)/4)))-round(sum_012*(2^((i)/4)))
+  df_US_double4days$newCases_013[i+36] <- round(sum_013*(2^((i+1)/4)))-round(sum_013*(2^((i)/4)))
+  df_US_double4days$newCases_014[i+36] <- round(sum_014*(2^((i+1)/4)))-round(sum_014*(2^((i)/4)))
+  df_US_double4days$newCases_015[i+36] <- round(sum_015*(2^((i+1)/4)))-round(sum_015*(2^((i)/4)))
+}
+
+
+# For 5 day doubling.
+df_US_double5days$newCases_005[36] <- round(sum_005*(2^(1/5)))-sum_005
+df_US_double5days$newCases_006[36] <- round(sum_006*(2^(1/5)))-sum_006
+df_US_double5days$newCases_007[36] <- round(sum_007*(2^(1/5)))-sum_007
+df_US_double5days$newCases_008[36] <- round(sum_008*(2^(1/5)))-sum_008
+df_US_double5days$newCases_009[36] <- round(sum_009*(2^(1/5)))-sum_009
+df_US_double5days$newCases_010[36] <- round(sum_010*(2^(1/5)))-sum_010
+df_US_double5days$newCases_011[36] <- round(sum_011*(2^(1/5)))-sum_011
+df_US_double5days$newCases_012[36] <- round(sum_012*(2^(1/5)))-sum_012
+df_US_double5days$newCases_013[36] <- round(sum_013*(2^(1/5)))-sum_013
+df_US_double5days$newCases_014[36] <- round(sum_014*(2^(1/5)))-sum_014
+df_US_double5days$newCases_015[36] <- round(sum_015*(2^(1/5)))-sum_015
+
+for (i in (1:(len_df-36))) {
+  df_US_double5days$newCases_005[i+36] <- round(sum_005*(2^((i+1)/5)))-round(sum_005*(2^((i)/5)))
+  df_US_double5days$newCases_006[i+36] <- round(sum_006*(2^((i+1)/5)))-round(sum_006*(2^((i)/5)))
+  df_US_double5days$newCases_007[i+36] <- round(sum_007*(2^((i+1)/5)))-round(sum_007*(2^((i)/5)))
+  df_US_double5days$newCases_008[i+36] <- round(sum_008*(2^((i+1)/5)))-round(sum_008*(2^((i)/5)))
+  df_US_double5days$newCases_009[i+36] <- round(sum_009*(2^((i+1)/5)))-round(sum_009*(2^((i)/5)))
+  df_US_double5days$newCases_010[i+36] <- round(sum_010*(2^((i+1)/5)))-round(sum_010*(2^((i)/5)))
+  df_US_double5days$newCases_011[i+36] <- round(sum_011*(2^((i+1)/5)))-round(sum_011*(2^((i)/5)))
+  df_US_double5days$newCases_012[i+36] <- round(sum_012*(2^((i+1)/5)))-round(sum_012*(2^((i)/5)))
+  df_US_double5days$newCases_013[i+36] <- round(sum_013*(2^((i+1)/5)))-round(sum_013*(2^((i)/5)))
+  df_US_double5days$newCases_014[i+36] <- round(sum_014*(2^((i+1)/5)))-round(sum_014*(2^((i)/5)))
+  df_US_double5days$newCases_015[i+36] <- round(sum_015*(2^((i+1)/5)))-round(sum_015*(2^((i)/5)))
+}
+
+
+# For 6 day doubling.
+df_US_double6days$newCases_005[36] <- round(sum_005*(2^(1/6)))-sum_005
+df_US_double6days$newCases_006[36] <- round(sum_006*(2^(1/6)))-sum_006
+df_US_double6days$newCases_007[36] <- round(sum_007*(2^(1/6)))-sum_007
+df_US_double6days$newCases_008[36] <- round(sum_008*(2^(1/6)))-sum_008
+df_US_double6days$newCases_009[36] <- round(sum_009*(2^(1/6)))-sum_009
+df_US_double6days$newCases_010[36] <- round(sum_010*(2^(1/6)))-sum_010
+df_US_double6days$newCases_011[36] <- round(sum_011*(2^(1/6)))-sum_011
+df_US_double6days$newCases_012[36] <- round(sum_012*(2^(1/6)))-sum_012
+df_US_double6days$newCases_013[36] <- round(sum_013*(2^(1/6)))-sum_013
+df_US_double6days$newCases_014[36] <- round(sum_014*(2^(1/6)))-sum_014
+df_US_double6days$newCases_015[36] <- round(sum_015*(2^(1/6)))-sum_015
+
+for (i in (1:(len_df-36))) {
+  df_US_double6days$newCases_005[i+36] <- round(sum_005*(2^((i+1)/6)))-round(sum_005*(2^((i)/6)))
+  df_US_double6days$newCases_006[i+36] <- round(sum_006*(2^((i+1)/6)))-round(sum_006*(2^((i)/6)))
+  df_US_double6days$newCases_007[i+36] <- round(sum_007*(2^((i+1)/6)))-round(sum_007*(2^((i)/6)))
+  df_US_double6days$newCases_008[i+36] <- round(sum_008*(2^((i+1)/6)))-round(sum_008*(2^((i)/6)))
+  df_US_double6days$newCases_009[i+36] <- round(sum_009*(2^((i+1)/6)))-round(sum_009*(2^((i)/6)))
+  df_US_double6days$newCases_010[i+36] <- round(sum_010*(2^((i+1)/6)))-round(sum_010*(2^((i)/6)))
+  df_US_double6days$newCases_011[i+36] <- round(sum_011*(2^((i+1)/6)))-round(sum_011*(2^((i)/6)))
+  df_US_double6days$newCases_012[i+36] <- round(sum_012*(2^((i+1)/6)))-round(sum_012*(2^((i)/6)))
+  df_US_double6days$newCases_013[i+36] <- round(sum_013*(2^((i+1)/6)))-round(sum_013*(2^((i)/6)))
+  df_US_double6days$newCases_014[i+36] <- round(sum_014*(2^((i+1)/6)))-round(sum_014*(2^((i)/6)))
+  df_US_double6days$newCases_015[i+36] <- round(sum_015*(2^((i+1)/6)))-round(sum_015*(2^((i)/6)))
+}
+
+
+# For 7 day doubling.
+df_US_double7days$newCases_005[36] <- round(sum_005*(2^(1/7)))-sum_005
+df_US_double7days$newCases_006[36] <- round(sum_006*(2^(1/7)))-sum_006
+df_US_double7days$newCases_007[36] <- round(sum_007*(2^(1/7)))-sum_007
+df_US_double7days$newCases_008[36] <- round(sum_008*(2^(1/7)))-sum_008
+df_US_double7days$newCases_009[36] <- round(sum_009*(2^(1/7)))-sum_009
+df_US_double7days$newCases_010[36] <- round(sum_010*(2^(1/7)))-sum_010
+df_US_double7days$newCases_011[36] <- round(sum_011*(2^(1/7)))-sum_011
+df_US_double7days$newCases_012[36] <- round(sum_012*(2^(1/7)))-sum_012
+df_US_double7days$newCases_013[36] <- round(sum_013*(2^(1/7)))-sum_013
+df_US_double7days$newCases_014[36] <- round(sum_014*(2^(1/7)))-sum_014
+df_US_double7days$newCases_015[36] <- round(sum_015*(2^(1/7)))-sum_015
+
+for (i in (1:(len_df-36))) {
+  df_US_double7days$newCases_005[i+36] <- round(sum_005*(2^((i+1)/7)))-round(sum_005*(2^((i)/7)))
+  df_US_double7days$newCases_006[i+36] <- round(sum_006*(2^((i+1)/7)))-round(sum_006*(2^((i)/7)))
+  df_US_double7days$newCases_007[i+36] <- round(sum_007*(2^((i+1)/7)))-round(sum_007*(2^((i)/7)))
+  df_US_double7days$newCases_008[i+36] <- round(sum_008*(2^((i+1)/7)))-round(sum_008*(2^((i)/7)))
+  df_US_double7days$newCases_009[i+36] <- round(sum_009*(2^((i+1)/7)))-round(sum_009*(2^((i)/7)))
+  df_US_double7days$newCases_010[i+36] <- round(sum_010*(2^((i+1)/7)))-round(sum_010*(2^((i)/7)))
+  df_US_double7days$newCases_011[i+36] <- round(sum_011*(2^((i+1)/7)))-round(sum_011*(2^((i)/7)))
+  df_US_double7days$newCases_012[i+36] <- round(sum_012*(2^((i+1)/7)))-round(sum_012*(2^((i)/7)))
+  df_US_double7days$newCases_013[i+36] <- round(sum_013*(2^((i+1)/7)))-round(sum_013*(2^((i)/7)))
+  df_US_double7days$newCases_014[i+36] <- round(sum_014*(2^((i+1)/7)))-round(sum_014*(2^((i)/7)))
+  df_US_double7days$newCases_015[i+36] <- round(sum_015*(2^((i+1)/7)))-round(sum_015*(2^((i)/7)))
+}
+
+# Predicted deaths starts with old through March 19th.  Then adds new.
+df_US_double3days$predictedDeaths <- df_US_double3days$deaths
+
+# Adding new predicted deaths starting March 20yh.
+# Predict new deaths
+# start at row 59 because that is March 20th.  This model had real data for March 19th and earlier.
+# All deaths predictions will be the same because starting with a ratio to multiply and then
+# dividing by same ratio at the last step.
+for ( i in (59:len_df)) {
+  # 3 day doubling
+  df_US_double3days$predictedDeaths[i] <- round(df_US_double3days$newCases_005[i-23]*.005)
+  df_US_double4days$predictedDeaths[i] <- round(df_US_double4days$newCases_005[i-23]*.005)
+  df_US_double5days$predictedDeaths[i] <- round(df_US_double5days$newCases_005[i-23]*.005)
+  df_US_double6days$predictedDeaths[i] <- round(df_US_double6days$newCases_005[i-23]*.005)
+  df_US_double7days$predictedDeaths[i] <- round(df_US_double7days$newCases_005[i-23]*.005)
+
+}
+# Add confirmed to data set
+df_US_double3days$confirmed <- df_daily_US$confirmed
+df_US_double3days <- df_US_double3days %>%
+  dplyr::mutate(deaths_cum = cumsum(deaths),
+                predicted_deaths_cum = cumsum(predictedDeaths),
+                newCases_008_cum = cumsum(newCases_008),
+                confirmed_cum = cumsum(confirmed))
+
+df_US_double3days_model <- df_US_double3days
+for (i in (1:14))  {
+  df_US_double3days_model[len_df+i,] = df_US_double3days_model[len_df,]
+  df_US_double3days_model[len_df+i,5] = df_US_double3days_model[len_df,5]+i
+  df_US_double3days_model$predictedDeaths[len_df+i] = round(df_US_double3days_model$newCases_008[len_df+i-23]*.008)
+}
+df_US_double3days_model <- df_US_double3days_model %>%
+  dplyr::mutate(deaths_cum = cumsum(deaths),
+                predicted_deaths_cum = cumsum(predictedDeaths),
+                newCases_008_cum = cumsum(newCases_008),
+                confirmed_cum = cumsum(confirmed))
+model_datatable <- datatable(df_US_double3days, options = list(pageLength = 100))
+
+# Add on some projection data
+
+
+#df_US_double3days$confirmed <- df_daily_US$confirmed
+
+```
+
+Worldwide Summary
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### confirmed {.value-box}
+
+```{r}
+
+valueBox(value = paste(format(sum(df$confirmed), big.mark = ","), "", sep = " "), 
+         caption = "Total Confirmed Cases", 
+         icon = "fas fa-user-md", 
+         color = confirmed_color)
+```
+
+
+### active {.value-box}
+
+```{r}
+valueBox(value = paste(format(sum(df$unrecovered, na.rm = TRUE), big.mark = ","), " (",
+                       round(100 * sum(df$unrecovered, na.rm = TRUE) / sum(df$confirmed), 1), 
+                       "%)", sep = ""), 
+         caption = "Active Cases (% of total cases)", icon = "fas fa-ambulance", 
+         color = active_color)
+```
+
+### recovered {.value-box}
+
+```{r}
+valueBox(value = paste(format(sum(df$recovered, na.rm = TRUE), big.mark = ","), " (",
+                       round(100 * sum(df$recovered, na.rm = TRUE) / sum(df$confirmed), 1), 
+                       "%)", sep = ""), 
+         caption = "Recovered Cases (% of total cases)", icon = "fas fa-heartbeat", 
+         color = recovered_color)
+```
+
+### death {.value-box}
+
+```{r}
+
+valueBox(value = paste(format(sum(df$death, na.rm = TRUE), big.mark = ","), " (",
+                       round(100 * sum(df$death, na.rm = TRUE) / sum(df$confirmed), 1), 
+                       "%)", sep = ""),
+         caption = "Death Cases (% of total cases)", 
+         icon = "fas fa-frown", 
+         color = death_color)
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### New Confirmed Cases
+
+```{r}
+
+valueBox(value = paste(format(sum(df_daily2$confirmed), big.mark = ","), "", sep = " "), 
+         caption = "New Confirmed Cases", 
+         icon = "fas fa-user-md", 
+         color = confirmed_color)
+```
+
+### New Recovered
+
+```{r}
+valueBox(value = paste(format(sum(df_daily2$recovered), big.mark = ","), " (",
+                       round(100 * sum(df_daily2$recovered) / (sum(df_daily2$recovered)+sum(df_daily2$death)), 1), 
+                       "%)", sep = ""), 
+         caption = "New Recovered Cases (% of New Recovered + New Deaths)", 
+         icon = "fas fa-heartbeat", 
+         color = recovered_color)
+```
+
+### New Deaths
+
+```{r}
+valueBox(value = paste(format(sum(df_daily2$death), big.mark = ","), "",  " (",
+                       round(100 * sum(df_daily2$death) / (sum(df_daily2$recovered)+sum(df_daily2$death)), 1), 
+                       "%)", sep = ""), 
+         caption = "New Deaths (% of New Recovered + New Deaths)", 
+         icon = "fas fa-frown", 
+         color = death_color)
+```
+
+Row 
+-----------------------------------------------------------------------
+    
+### Worldwide Cumulative Cases
+    
+```{r}
+plotly::plot_ly(data = df_daily) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ confirmed_cum,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Confirmed",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ active_cum,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Active",
+                    line = list(color = active_color),
+                    marker = list(color = active_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ recovered_cum,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Recovered",
+                    line = list(color = recovered_color),
+                    marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ death_cum,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Death",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Cumulative Number of Cases"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+
+### Worldwide New Cases and Deaths
+    
+```{r}
+plotly::plot_ly(data = df_daily) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ confirmed,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Confirmed",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ recovered_cum,
+  #                   type = "scatter",
+  #                   mode = "lines+markers",
+  #                   name = "Recovered",
+  #                   line = list(color = recovered_color),
+  #                   marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ death,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Death",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ confirmed_cum,
+  #                   type = "scatter",
+  #                   mode = 'lines+markers',
+  #                   name = "Confirmed",
+  #                   line = list(color = confirmed_color),
+  #                   marker = list(color = confirmed_color)) %>%
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Number of New Cases & New Deaths"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+   
+Row
+-----------------------------------------------------------------------
+   
+### Notes
+The data presented here is for worldwide reported cases of COVID-19, the disease related to the SARS-CoV-2 virus.  
+  
+The ratio of "New Recovered Cases" and "New Deaths" is just for the latest day of available data.  This is for cases that had a resolution that day. The actual death rate for that day will be lower, likely much lower, as the number of true New Recovered Cases is incomplete.  It is incomplete because there is likely an order of magnitude (or two) higher number of cases that were never confirmed or reported. [It is  even possible that some percentage of the population contacted COVID-19 and recovered without ever knowing they did.] Therefore, the true number of New Recovered Cases cases will be higher (maybe much higher) than reported.  
+
+This dashboard uses the "coronavirus" package for R developed by Rami Krispin, which facilitates the download of data related to COVID-19.  The dataset begins Jan 22, 2020 and continues until the last day of complete data.  Data includes Country, Lat/Long, Date, and type of case.  Case has three types of entries: confirmed, recovered, or death. "case" data is new data for each day, e.g. number of "confirmed" are newly confirmed cases, not cumulative.  
+Go here for details of the package and data sources:  https://ramikrispin.github.io/coronavirus/index.html  
+  
+The data seems very close, but slightly different from the data at these two locations:  
+https://www.worldometers.info/coronavirus/  
+https://coronavirus.jhu.edu/map.html  
+
+  
+
+United States Summary
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### confirmed {.value-box}
+
+```{r}
+
+valueBox(value = paste(format(sum(df_US$confirmed), big.mark = ","), "", sep = " "), 
+         caption = "Total Confirmed Cases", 
+         icon = "fas fa-user-md", 
+         color = confirmed_color)
+```
+
+
+### active {.value-box}
+
+```{r}
+valueBox(value = paste(format(sum(df_US$unrecovered, na.rm = TRUE), big.mark = ","), " (",
+                       round(100 * sum(df_US$unrecovered, na.rm = TRUE) / sum(df_US$confirmed), 1), 
+                       "%)", sep = ""), 
+         caption = "Active Cases (% of total cases)", icon = "fas fa-ambulance", 
+         color = active_color)
+```
+
+### recovered {.value-box}
+
+```{r}
+valueBox(value = paste(format(sum(df_US$recovered, na.rm = TRUE), big.mark = ","), " (",
+                       round(100 * sum(df_US$recovered, na.rm = TRUE) / sum(df_US$confirmed), 1), 
+                       "%)", sep = ""), 
+         caption = "Recovered Cases (% of total cases)", icon = "fas fa-heartbeat", 
+         color = recovered_color)
+```
+
+### death {.value-box}
+
+```{r}
+
+valueBox(value = paste(format(sum(df_US$death, na.rm = TRUE), big.mark = ","), " (",
+                       round(100 * sum(df_US$death, na.rm = TRUE) / sum(df_US$confirmed), 1), 
+                       "%)", sep = ""),
+         caption = "Death Cases (% of total cases)", 
+         icon = "fas fa-frown", 
+         color = death_color)
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### New Confirmed Cases
+
+```{r}
+
+valueBox(value = paste(format(sum(df_daily2_US$confirmed), big.mark = ","), "", sep = " "), 
+         caption = "New Confirmed Cases", 
+         icon = "fas fa-user-md", 
+         color = confirmed_color)
+```
+
+### New Recovered
+
+```{r}
+valueBox(value = paste(format(sum(df_daily2_US$recovered), big.mark = ","), " (",
+                       round(100 * sum(df_daily2_US$recovered) / (sum(df_daily2_US$recovered)+sum(df_daily2_US$death)), 1), 
+                       "%)", sep = ""), 
+         caption = "New Recovered Cases (% of New Recovered + New Deaths)", 
+         icon = "fas fa-heartbeat", 
+         color = recovered_color)
+```
+
+### New Deaths
+
+```{r}
+valueBox(value = paste(format(sum(df_daily2_US$death), big.mark = ","), "",  " (",
+                       round(100 * sum(df_daily2_US$death) / (sum(df_daily2_US$recovered)+sum(df_daily2_US$death)), 1), 
+                       "%)", sep = ""), 
+         caption = "New Deaths (% of New Recovered + New Deaths)", 
+         icon = "fas fa-frown", 
+         color = death_color)
+```
+
+Row 
+-----------------------------------------------------------------------
+    
+### United States Cumulative Cases
+    
+```{r}
+plotly::plot_ly(data = df_daily_US) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ confirmed_cum,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Confirmed",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ active_cum,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Active",
+                    line = list(color = active_color),
+                    marker = list(color = active_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ recovered_cum,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Recovered",
+                    line = list(color = recovered_color),
+                    marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ death_cum,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Death",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Cumulative Number of Cases"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+
+### United States New Cases and Deaths
+    
+```{r}
+plotly::plot_ly(data = df_daily_US) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ confirmed,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Confirmed",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ recovered_cum,
+  #                   type = "scatter",
+  #                   mode = "lines+markers",
+  #                   name = "Recovered",
+  #                   line = list(color = recovered_color),
+  #                   marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ death,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Death",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ confirmed_cum,
+  #                   type = "scatter",
+  #                   mode = 'lines+markers',
+  #                   name = "Confirmed",
+  #                   line = list(color = confirmed_color),
+  #                   marker = list(color = confirmed_color)) %>%
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Number of New Cases & New Deaths"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+
+Row
+-----------------------------------------------------------------------
+   
+### Notes
+The data presented here is for United States reported cases of COVID-19, the disease related to the SARS-CoV-2 virus.  
+  
+The ratio of "New Recovered Cases" and "New Deaths" is just for the latest day of available data.  This is for cases that had a resolution that day. The actual death rate for that day will be lower, likely much lower, as the true number of New Recovered Cases is incomplete.  It is incomplete because there is likely an order of magnitude (or two) higher number of cases that were never confirmed or reported. [It is  even possible that some percentage of the population contacted COVID-19 and recovered without ever knowing they did.] Therefore, the true number of New Recovered Cases cases will be higher (maybe much higher) than reported.  
+
+
+This dashboard uses the "coronavirus" package for R developed by Rami Krispin, which facilitates the download of data related to COVID-19.  The dataset begins Jan 22, 2020 and continues until the last day of complete data.  Data includes Country, Lat/Long, Date, and type of case.  Case has three types of entries: confirmed, recovered, or death.  "case" data is new data for each day, e.g. number of "confirmed" are newly confirmed cases, not cumulative.  
+Go here for details of the package and data sources:  https://ramikrispin.github.io/coronavirus/index.html  
+  
+The data seems very close, but slightly different from the data at these two locations:  
+https://www.worldometers.info/coronavirus/  
+https://coronavirus.jhu.edu/map.html  
+
+   
+A Model
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### One Model As An Exercise
+
+What this is not:  
+This is NOT an attempt to state that the model analyzed here is a model suitable for modeling the cases of the COVID-19 disease for all eternity.  It isn't.  
+
+What this is:  
+In fact, this is just an exercise/project to see if I could develop a model similar to one I read about. And to see if the model I read about would be useful for the timeframe stated in the article.  
+I read about the model shown on this page here: https://www.insidermonkey.com/blog/hell-is-coming-here-is-the-mathematical-proof-822824/  
+I was interested in seeing if I could model it as described.  
+
+  
+This article postulates that data fairly early on from South Korea and the Princess Diamond cruise ship is robust enough to predict that:  
+1) the number of COVID-19 cases is much, much higher than reported (primarily because many people contact it and don't show symptons),  
+2) early on case transmission rate was very high before social distancing measures were introduced leading to a case doubling rate every of three days,  
+3) the death rate is much lower than expected,  
+4) the average number of days until full resolution of each case (either with a recovery or a death) is about 23 days.  
+This article estimates that the death rate is between 0.5% and 1.0%.  They use 0.8% in their calcuations.
+
+
+Row {data-height=500}
+-----------------------------------------------------------------------
+
+### Actual New Deaths vs. Predicted New Deaths for Doubling Every 3 Days
+
+``` {r}
+plotly::plot_ly(data = df_US_double3days) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ deaths,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Actual Deaths",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ recovered_cum,
+  #                   type = "scatter",
+  #                   mode = "lines+markers",
+  #                   name = "Recovered",
+  #                   line = list(color = recovered_color),
+  #                   marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ predictedDeaths,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = " Predicted Deaths",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ confirmed_cum,
+  #                   type = "scatter",
+  #                   mode = 'lines+markers',
+  #                   name = "Confirmed",
+  #                   line = list(color = confirmed_color),
+  #                   marker = list(color = confirmed_color)) %>%
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Number of New Deaths"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+
+### Notes
+
+The article was written on March 20th and seemed to include data for US deaths up to March 19th.  
+Here is how the model seemed to work as described in the article:  
+- Each death is a result from 0.8% deaths from cases 23 days prior. In other words, for each death on day X, there were 125 [1/0.008] new cases 23 days PRIOR. This model does not use reported confirmed cases.
+- The first reported death in the U.S. was Feb 29th. Therefore, the model states that 125 new COVID-19 cases actually happened on Feb 6th.  
+- Actual deaths and predicted deaths mirror each other up to March 19th.  That is because predicted cases going back 23 days prior to March 19 and calculated from actual deaths, therefore predicted deaths lead to actual deaths (to that date).  
+- Remember that the number of cases can actually be computed from deaths for 23 days prior to March 19th <- February 25th. Starting February 26th, new cases are calculated using author's rate, which is predicted to be doubling every 3 days. Therefore, starting on February 26th, the number of new cases doubles every 3 days.  
+- Back to deaths... From March 20th to current date, the number of new deaths is still modeled to be 0.8% of the number of new cases 23 days prior.  
+  
+Review of graph:  
+- The model seems to be an ok approximation for the first 10-12 days or so since March 19th.  
+- The number of actual new deaths jumps around quite a bit.  There are three sets of back to back days in late March and early April where the number of new deaths actually dips.  
+- Toward the end of this portion of the model, the modeled number of new deaths is clearly outstipping actual deaths.
+
+
+Row {data-height=500}
+-----------------------------------------------------------------------
+
+### Cumulative Deaths - Actual vs. Model Prediction
+
+``` {r}
+plotly::plot_ly(data = df_US_double3days) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ deaths_cum,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Actual Deaths",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ recovered_cum,
+  #                   type = "scatter",
+  #                   mode = "lines+markers",
+  #                   name = "Recovered",
+  #                   line = list(color = recovered_color),
+  #                   marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ predicted_deaths_cum,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = " Predicted Deaths",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ confirmed_cum,
+  #                   type = "scatter",
+  #                   mode = 'lines+markers',
+  #                   name = "Confirmed",
+  #                   line = list(color = confirmed_color),
+  #                   marker = list(color = confirmed_color)) %>%
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Cumulative Number of Deaths"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+
+### Notes
+
+Review of graph:  
+- The model seems to lag actual deaths at first and then increases quickly in the later dates. Actual deaths may have been doubling early on, but (at the end of this graph) are probably doubling every 4 to 5 days by April 4th, which likely means that the number of new cases may have been doubling every 3 days early on, but the doubling rate probably slowed before March 14th.
+- The author stated that there would be 12,500 deaths by April 10th. The U.S. is very likely to have greater than 12,500 deaths by April 10th.  The author predicted this on March 20th. He will very likely be shown to be correct. [Writing this on April 4th.]
+
+
+Row {data-height=500}
+-----------------------------------------------------------------------
+
+### Deaths - Model Prediction - Two Weeks Forward
+
+``` {r}
+plotly::plot_ly(data = df_US_double3days_model) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ predictedDeaths,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Daily New Predicted Deaths",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ recovered_cum,
+  #                   type = "scatter",
+  #                   mode = "lines+markers",
+  #                   name = "Recovered",
+  #                   line = list(color = recovered_color),
+  #                   marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ predicted_deaths_cum,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Cumulative Predicted Deaths",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ confirmed_cum,
+  #                   type = "scatter",
+  #                   mode = 'lines+markers',
+  #                   name = "Confirmed",
+  #                   line = list(color = confirmed_color),
+  #                   marker = list(color = confirmed_color)) %>%
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Number of Deaths"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+
+### Notes
+
+This graph shows predicted new and cumulative deaths based on the model for the next two weeks IF the number of new cases continues to double every three days as described in the model.  
+By April 12th, the U.S. will see >10,000 new deaths a day as modeled.  
+  
+Virus progression may be modeled early on with an exponential function (as done here), but it cannot maintain an exponential rate indefinitely (obviously). A virus is more likely to look exponential early on and then like a logarithmic function in the later stages.  
+So when does it change growth rates?  
+The author does not predict that the number of new cases will double every three days indefinitely. In fact, he or she mentions that some form of social distancing was starting in the U.S. by March 14th. Since then, more and more states have started some form of social distancing at verious levels of agressiveness. The doubling rate will most certainly have been changing between March 14th and today [April 4th]. To every four days, then every five days, etc..  
+
+
+Row {data-height=500}
+-----------------------------------------------------------------------
+
+
+### Daily Confirmed Cases vs. Model Prediction
+
+``` {r}
+plotly::plot_ly(data = df_US_double3days) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ newCases_008,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Modeled New Cases",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ recovered_cum,
+  #                   type = "scatter",
+  #                   mode = "lines+markers",
+  #                   name = "Recovered",
+  #                   line = list(color = recovered_color),
+  #                   marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ confirmed,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Confirmed New Cases",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ confirmed_cum,
+  #                   type = "scatter",
+  #                   mode = 'lines+markers',
+  #                   name = "Confirmed",
+  #                   line = list(color = confirmed_color),
+  #                   marker = list(color = confirmed_color)) %>%
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Number of New Cases"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+
+### Notes
+
+This is just to show how fast doubling actually grows. It showed confirmed (remember only those tested and positive and not necessarily the true number) number of new cases compared to doubling every three days.  
+Clearly, although we may have been doubling every three days early on, we aren't doing that anymore. It would mean that the U.S. added more than 42M new cases yesterday.  
+And I'm not suggesting that the author stated that the U.S. would still be doubling by April 4th.
+
+
+Row {data-height=500}
+-----------------------------------------------------------------------
+
+### Cumulative Confirmed Cases vs. Model Prediction
+
+``` {r}
+plotly::plot_ly(data = df_US_double3days) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ newCases_008_cum,
+                    type = "scatter",
+                    mode = "lines+markers",
+                    name = "Modeled Cases",
+                    line = list(color = confirmed_color),
+                    marker = list(color = confirmed_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ recovered_cum,
+  #                   type = "scatter",
+  #                   mode = "lines+markers",
+  #                   name = "Recovered",
+  #                   line = list(color = recovered_color),
+  #                   marker = list(color = recovered_color)) %>%
+  plotly::add_trace(x = ~ date,
+                    y = ~ confirmed_cum,
+                    type = "scatter",
+                    mode = 'lines+markers',
+                    name = "Confirmed Cases",
+                    line = list(color = death_color),
+                    marker = list(color = death_color)) %>%
+  # plotly::add_trace(x = ~ date,
+  #                   y = ~ confirmed_cum,
+  #                   type = "scatter",
+  #                   mode = 'lines+markers',
+  #                   name = "Confirmed",
+  #                   line = list(color = confirmed_color),
+  #                   marker = list(color = confirmed_color)) %>%
+   # plotly::add_annotations(x = as.Date("2020-03-01"),
+   #                        y = 42716,
+   #                        text = paste("# of recovered cases surpass", 
+   #                                     "", 
+   #                                     "the # of active cases"),
+   #                        xref = "x",
+   #                        yref = "y",
+   #                        arrowhead = 5,
+   #                        arrowhead = 3,
+   #                        arrowsize = 1,
+   #                        showarrow = TRUE,
+   #                        ax = -10,
+   #                        ay = 90) %>%
+  plotly::layout(title = "",
+                 yaxis = list(title = "Number of New Cases"),
+                 xaxis = list(title = "Date"),
+                 legend = list(x = 0.1, y = 0.9),
+                 hovermode = "compare")
+```
+
+### Notes
+
+This is just to show the power of doubling in another way.  
+“The greatest shortcoming of the human race is our inability to understand the exponential function.” - Albert Bartlett  
+Check this out: https://www.youtube.com/watch?v=e_VpyoAXpA8  
+If you don't have time, this one is only a few minutes long:  
+https://youtu.be/ijf7UxI7EFE
+
+
+Row
+-----------------------------------------------------------------------
+
+### Next
+
+I'd like to do soon:  
+- Make a Shiny presentation where users can choose their doubling rate and death rate.  
+
+
+US Raw Data
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Data
+
+```{r}
+CV_datatable
+```
+
+Modeling Data
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Data For/From Model
+
+```{r}
+model_datatable
+```
+
+
+
+
+
+

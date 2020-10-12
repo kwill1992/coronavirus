@@ -1,0 +1,108 @@
+---
+title: "CoronaVirus"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+To do:
+1. Credit Krispin with footnote.
+2.
+
+## Get Data
+
+Rami Krispin created a R package to get worldwide data on the 2019 Novel Coronavirus (2019-nCoV-2) epidemic.  Details are available here: https://ramikrispin.github.io/coronavirus/index.html.   
+There are two versions available. The data from the CRAN version, which can be installed by:  
+```
+install.package("coronavirus")
+```
+is not updated daily.  
+For data which is updated daily, use the Github version by executing this:
+
+```
+#Must have "devtools" installed for the github version.
+install.packages("devtools")
+devtools::install_github("RamiKrispin/coronavirus")
+```
+Note: When executing this RMarkdown code, I am not actually running the two lines above.  I found that they don't work properly in RMarkdown.  I execute in R on my desktop (using IDE R Studio) to get library(coronavirus) data updated with the most recent data.  Most recent data seems to be data from the previous day, i.e. it doesn't have current day's data [that i can tell].
+
+Look at the data:
+```{r}
+# Use the coronavirus package.
+library(coronavirus)
+# Get the first six rows.
+head(coronavirus)
+# Get the last six rows.
+tail(coronavirus)
+```
+
+Let's find some details like:  
+- Types of "type"  
+- Earliest date entry  
+- Latest date entry  
+
+
+
+
+``` {r include=FALSE}
+# use Tidyverse packages.
+library(tidyverse)
+```
+
+```
+# Use Tidyverse packages.
+library(tidyverse)
+```
+
+``` {r}
+# Make data as a tibble.
+coronavirus <- as_tibble(coronavirus)
+# Take a look at data.
+coronavirus
+
+# Group by Region and type.
+# Summarize by cases.
+# Order from large to small.
+# See 20 largest data entries.
+corona_summary <- coronavirus %>% group_by(Country.Region, type) %>%
+  summarise(total_cases = sum(cases)) %>%
+  arrange(-total_cases)
+corona_summary %>% head(20)
+# Get latest and earliest dates.
+max(coronavirus$date)
+min(coronavirus$date)
+
+# Get new confirmed cases and deaths for the most recent date.
+# Get most recent date.
+# Use Region, type, cases.
+# Extract different "types" into columns.
+# Largest value of "confirmed" on top.
+coronavirus %>% 
+  filter(date == max(date)) %>%
+  select(country = Country.Region, type, cases) %>%
+  group_by(country, type) %>%
+  summarise(total_cases = sum(cases)) %>%
+  pivot_wider(names_from = type,
+              values_from = total_cases) %>%
+  arrange(-confirmed)
+```
+
+corona virusThis is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
